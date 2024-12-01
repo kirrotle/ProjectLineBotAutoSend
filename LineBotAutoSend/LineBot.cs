@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Configuration.Json;
 using isRock.LineBot;
+using System.Reflection;
 
 namespace LineBotAutoSend
 {
@@ -18,8 +19,9 @@ namespace LineBotAutoSend
 
         public LineBot()
         {
+            string basePath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) ?? "";
             _config = new ConfigurationBuilder().
-                SetBasePath(Directory.GetCurrentDirectory()).
+                SetBasePath(basePath).
                 AddJsonFile("appsettings.json").
                 Build();
 
