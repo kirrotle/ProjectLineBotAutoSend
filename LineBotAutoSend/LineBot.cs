@@ -12,21 +12,16 @@ namespace LineBotAutoSend
 {
     internal class LineBot
     {
-        private IConfigurationRoot _config;
+        private IConfigurationSection _section;
         private string _channelAccessToken;
         private string _lineUserId;
         private Bot _bot;
 
-        public LineBot()
+        public LineBot(IConfigurationRoot config)
         {
-            string basePath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) ?? "";
-            _config = new ConfigurationBuilder().
-                SetBasePath(basePath).
-                AddJsonFile("appsettings.json").
-                Build();
-
-            _channelAccessToken = _config.GetSection("LineChannelAccessToken")?.Value?.ToString() ?? "";
-            _lineUserId = _config.GetSection("LineUserId")?.Value?.ToString() ?? "";
+            _section = config.GetSection("LineBot");
+            _channelAccessToken = _section.GetSection("LineChannelAccessToken")?.Value?.ToString() ?? "";
+            _lineUserId = _section.GetSection("LineUserId")?.Value?.ToString() ?? "";
             _bot = new Bot(_channelAccessToken);
         }
 
