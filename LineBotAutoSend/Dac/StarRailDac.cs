@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace LineBotAutoSend.Dac
+namespace Project.Dac
 {
     public class StarRailDac : _Dac
     {

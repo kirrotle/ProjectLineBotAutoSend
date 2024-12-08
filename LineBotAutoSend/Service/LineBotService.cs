@@ -8,16 +8,16 @@ using Microsoft.Extensions.Configuration.Json;
 using isRock.LineBot;
 using System.Reflection;
 
-namespace LineBotAutoSend
+namespace Project.Service
 {
-    internal class LineBot
+    internal class LineBotService
     {
         private IConfigurationSection _section;
         private string _channelAccessToken;
         private string _lineUserId;
         private Bot _bot;
 
-        public LineBot(IConfigurationRoot config)
+        public LineBotService(IConfigurationRoot config)
         {
             _section = config.GetSection("LineBot");
             _channelAccessToken = _section.GetSection("LineChannelAccessToken")?.Value?.ToString() ?? "";

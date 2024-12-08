@@ -8,19 +8,19 @@ using Microsoft.Extensions.Configuration.Json;
 using HtmlAgilityPack;
 using System.Text.RegularExpressions;
 using System.Diagnostics.CodeAnalysis;
-using LineBotAutoSend.Dac;
+using Project.Dac;
 using static Project.Model.StarRailModel;
 
 //解析星瓊鐵道資訊
-namespace LineBotAutoSend
+namespace Project.Service
 {
-    public class StarRail
+    public class StarRailService
     {
         private IConfigurationSection _section;
         private string _officialInfoLink;
         private string _mainPage;
 
-        public StarRail(IConfigurationRoot config)
+        public StarRailService(IConfigurationRoot config)
         {
             _section = config.GetSection("StarRail");
             _officialInfoLink = _section.GetSection("OfficialInfoLink")?.Value ?? "";

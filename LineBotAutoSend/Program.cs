@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Configuration;
 using System.Reflection;
+using Project.Service;
 
 namespace LineBotAutoSend
 {
@@ -9,7 +10,7 @@ namespace LineBotAutoSend
         {
             IConfigurationRoot builder = Builder();
             Console.WriteLine("蒐集資訊");
-            StarRail starRail = new StarRail(builder);
+            StarRailService starRail = new StarRailService(builder);
             starRail.ParserForwardInfo();
 
             //Console.WriteLine("發送資訊");

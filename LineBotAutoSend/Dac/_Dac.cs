@@ -7,8 +7,9 @@ using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration.Json;
 using Microsoft.Extensions.Configuration;
 using Dapper;
+using LineBotAutoSend;
 
-namespace LineBotAutoSend.Dac
+namespace Project.Dac
 {
     public class _Dac
     {
