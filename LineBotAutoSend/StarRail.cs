@@ -6,9 +6,10 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Configuration.Json;
 using HtmlAgilityPack;
-using static Project.Model.StarRailModel;
 using System.Text.RegularExpressions;
 using System.Diagnostics.CodeAnalysis;
+using LineBotAutoSend.Dac;
+using static Project.Model.StarRailModel;
 
 //解析星瓊鐵道資訊
 namespace LineBotAutoSend
@@ -40,6 +41,20 @@ namespace LineBotAutoSend
             //將不相關的標題給篩選掉
             articles = FilterArticle(articles);
 
+            //搜索內部文章是否有兌換碼
+            
+
+            return "";
+        }
+
+        /// <summary>
+        /// 取得文章列表內的兌換碼
+        /// </summary>
+        /// <param name="models"></param>
+        /// <returns></returns>
+        private string GetArticleListRedeemCode(List<ArticleModel> models)
+        {
+            models.ForEach(article => { });
             return "";
         }
 
@@ -84,15 +99,66 @@ namespace LineBotAutoSend
             //取得有版本名稱的
             Regex reVersionName = new Regex("「.*」");
 
-            return model.Where(artical =>
+            return model.Where(article =>
             {
-                if (reVersion.IsMatch(artical.Title) &&
-                reVersionName.IsMatch(artical.Title))
+                if (reVersion.IsMatch(article.Title) &&
+                reVersionName.IsMatch(article.Title) &&
+                IsNextVersion(article.Title))
                     return true;
 
                 return false;
             }).ToList();
-            
+        }
+
+        /// <summary>
+        /// 判斷是否為下個版本
+        /// </summary>
+        /// <param name="title"></param>
+        /// <returns></returns>
+        private bool IsNextVersion(string title)
+        {
+            List<string> possibleVersion = GetNextPossibleVersion();
+
+            foreach(string ver in possibleVersion)
+            {
+                if (title.Contains(ver))
+                    return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// 取得可能的下個版本名稱
+        /// </summary>
+        /// <returns></returns>
+        private List<string> GetNextPossibleVersion()
+        {
+            List<string> result = new List<string>();
+            (int mainVersion, int subVersion) = GetCurrentVersion();
+
+            //下個版本只有兩種可能
+            //一種是((主版本+1).1)
+            //另一種是(主版本.(次版本+1))
+            result.Add($"{mainVersion + 1}.1");
+            result.Add($"{mainVersion}.{subVersion + 1}");
+
+            return result;
+        }
+
+        /// <summary>
+        /// 取得目前的版本
+        /// </summary>
+        /// <returns></returns>
+        private (int mainVersion, int subVersion) GetCurrentVersion()
+        {
+            StarRailDac dac = new StarRailDac();
+            string currentVersion = dac.GetCurrentVersion();
+            string[] verArr = currentVersion.Split(".");
+
+            if (verArr.Length == 2)
+                return (int.Parse(verArr[0]), int.Parse(verArr[1]));
+
+            return (100, 100);
         }
 
     }

@@ -22,6 +22,18 @@ namespace Project.Model
             /// 文章連結網址
             /// </summary>
             public string Url { get; set; } = "";
+
+            /// <summary>
+            /// 版本
+            /// </summary>
+            public string Version { get; set; } = "";
+
+            /// <summary>
+            /// 版本資訊
+            /// </summary>
+            public string VersionInfo { get; set; } = "";
+
+
         }
     }
 }

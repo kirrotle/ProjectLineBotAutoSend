@@ -17,7 +17,7 @@ namespace LineBotAutoSend
             //lineBot.TestSendMessage();
         }
 
-        private static IConfigurationRoot Builder()
+        public static IConfigurationRoot Builder()
         {
             string basePath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) ?? "";
             return new ConfigurationBuilder().
