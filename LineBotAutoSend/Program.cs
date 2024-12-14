@@ -9,13 +9,16 @@ namespace LineBotAutoSend
         private static void Main(string[] args)
         {
             IConfigurationRoot builder = Builder();
+            
             Console.WriteLine("蒐集資訊");
-            StarRailService starRail = new StarRailService(builder);
-            starRail.ParserForwardInfo();
+            string Message = "";
 
-            //Console.WriteLine("發送資訊");
-            //LineBot lineBot = new LineBot(builder);
-            //lineBot.TestSendMessage();
+            StarRailService starRail = new StarRailService(builder);
+            Message += starRail.ParserForwardInfo();
+
+            Console.WriteLine("發送資訊");
+            LineBotService lineBot = new LineBotService(builder);
+            lineBot.SendMessage(Message);
         }
 
         public static IConfigurationRoot Builder()

@@ -36,6 +36,19 @@ namespace Project.Dac
             return result;
         }
 
+        protected bool ExecuteCommand(string sqlStr,object? paramObj = null)
+        {
+            bool result = false;
+
+            Connect();
+
+            result = _conn.Execute(sqlStr,paramObj) == 0;
+
+            Close();
+
+            return result;
+        }
+
         private void Connect()
         {
             _conn = new SqlConnection(_connectionString);

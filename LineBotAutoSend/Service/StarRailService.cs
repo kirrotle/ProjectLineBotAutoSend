@@ -7,9 +7,9 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Configuration.Json;
 using HtmlAgilityPack;
 using System.Text.RegularExpressions;
-using System.Diagnostics.CodeAnalysis;
 using Project.Dac;
 using static Project.Model.StarRailModel;
+using System.Web;
 
 //解析星瓊鐵道資訊
 namespace Project.Service
@@ -17,6 +17,7 @@ namespace Project.Service
     public class StarRailService
     {
         private IConfigurationSection _section;
+        private StarRailDac _dac;
         private string _officialInfoLink;
         private string _mainPage;
 
@@ -25,6 +26,7 @@ namespace Project.Service
             _section = config.GetSection("StarRail");
             _officialInfoLink = _section.GetSection("OfficialInfoLink")?.Value ?? "";
             _mainPage = _section.GetSection("MainPage")?.Value ?? "";
+            _dac = new StarRailDac();
         }
 
         /// <summary>
@@ -32,19 +34,19 @@ namespace Project.Service
         /// </summary>
         public string ParserForwardInfo()
         {
-            HtmlWeb web = new HtmlWeb();
-            HtmlDocument htmlDoc = web.Load(_officialInfoLink);
-
-            //取得個文章的標題與網址
-            List<ArticleModel> articles = ParserArticle(htmlDoc);
+            //取得各個文章的標題與網址
+            List<ArticleModel> articles = ParserArticle();
 
             //將不相關的標題給篩選掉
             articles = FilterArticle(articles);
 
             //搜索內部文章是否有兌換碼
-            
+            List<string> redeemList = GetArticleListRedeemCode(articles);
 
-            return "";
+            //將兌換碼組成訊息
+            string message = ProcessMesage(redeemList);
+
+            return message;
         }
 
         /// <summary>
@@ -52,10 +54,68 @@ namespace Project.Service
         /// </summary>
         /// <param name="models"></param>
         /// <returns></returns>
-        private string GetArticleListRedeemCode(List<ArticleModel> models)
+        private List<string> GetArticleListRedeemCode(List<ArticleModel> models)
         {
-            models.ForEach(article => { });
-            return "";
+            foreach (ArticleModel article in models)
+            {
+                List<string> result = ParserRedeemCode(article.Url);
+                if (result.Count == 3)
+                {
+                    _dac.InsertVersion(article);
+                    return result;
+                }
+            }
+
+            return new List<string>();
+        }
+
+        private List<string> ParserRedeemCode(string url)
+        {
+            List<string> redeemCodeList = new List<string>();
+
+            HtmlWeb web = new HtmlWeb();
+            HtmlDocument doc = web.Load(url);
+
+            //兌換碼有兩種過濾方式,都找找看
+            List<HtmlNode> htmlNodes = new List<HtmlNode>();
+            List<string> xpathList = new List<string>() 
+            {
+                "//font/b/font",
+                "//font[@color='#cc99ff']"
+            };
+
+            xpathList.ForEach(xpath =>
+            {
+                HtmlNodeCollection collect = doc.DocumentNode.SelectNodes(xpath);
+                if (collect != null)
+                {
+                    htmlNodes.AddRange(collect);
+                }
+            });
+
+            htmlNodes.ForEach(node =>
+            {
+                if (IsRedeemCode(node.InnerText))
+                    redeemCodeList.Add(node.InnerText);
+            });
+
+            //將重複的兌換碼刪除
+            redeemCodeList = redeemCodeList.Distinct().ToList();
+
+            return redeemCodeList;
+        }
+
+        /// <summary>
+        /// 判斷是否為ReedomCode
+        /// </summary>
+        /// <param name="text"></param>
+        /// <returns></returns>
+        private bool IsRedeemCode(string text)
+        {
+            //兌換碼為大寫英文及數字組字組合而成,共為12碼
+            Regex regex = new Regex("^[A-Z1-9]{12}$");
+
+            return regex.IsMatch(text);
         }
 
         /// <summary>
@@ -63,9 +123,13 @@ namespace Project.Service
         /// </summary>
         /// <param name="htmlDoc"></param>
         /// <returns></returns>
-        private List<ArticleModel> ParserArticle(HtmlDocument htmlDoc)
+        private List<ArticleModel> ParserArticle()
         {
             List<ArticleModel> model = new List<ArticleModel>();
+
+            //初始化
+            HtmlWeb web = new HtmlWeb();
+            HtmlDocument htmlDoc = web.Load(_officialInfoLink);
 
             //取得各文章標題
             HtmlNodeCollection titleNodes = htmlDoc.DocumentNode.SelectNodes(".//div[@class='b-list__tile']");
@@ -77,7 +141,7 @@ namespace Project.Service
                 if (node == null)
                     return false;
 
-                article.Title = node.InnerText;
+                article.Title = HttpUtility.HtmlDecode(node.InnerText);
                 article.Url = _mainPage + node.Attributes["href"].Value;
 
                 model.Add(article);
@@ -103,7 +167,7 @@ namespace Project.Service
             {
                 if (reVersion.IsMatch(article.Title) &&
                 reVersionName.IsMatch(article.Title) &&
-                IsNextVersion(article.Title))
+                IsNextVersion(article))
                     return true;
 
                 return false;
@@ -115,14 +179,17 @@ namespace Project.Service
         /// </summary>
         /// <param name="title"></param>
         /// <returns></returns>
-        private bool IsNextVersion(string title)
+        private bool IsNextVersion(ArticleModel model)
         {
             List<string> possibleVersion = GetNextPossibleVersion();
 
-            foreach(string ver in possibleVersion)
+            foreach (string ver in possibleVersion)
             {
-                if (title.Contains(ver))
+                if (model.Title.Contains(ver))
+                {
+                    model.Version = ver;
                     return true;
+                }
             }
             return false;
         }
@@ -151,8 +218,7 @@ namespace Project.Service
         /// <returns></returns>
         private (int mainVersion, int subVersion) GetCurrentVersion()
         {
-            StarRailDac dac = new StarRailDac();
-            string currentVersion = dac.GetCurrentVersion();
+            string currentVersion = _dac.GetCurrentVersion();
             string[] verArr = currentVersion.Split(".");
 
             if (verArr.Length == 2)
@@ -161,5 +227,19 @@ namespace Project.Service
             return (100, 100);
         }
 
+        private string ProcessMesage (List<string> redeemList)
+        {
+            if (redeemList.Count == 0)
+                return "目前沒有擷取到鐵道的兌換碼＞﹏＜,等待下個版本";
+
+            StringBuilder builder = new StringBuilder();
+            builder.AppendLine("取到鐵道兌換碼了╰(*°▽°*)╯");
+            redeemList.ForEach(redeem =>
+            {
+                builder.AppendLine(redeem);
+            });
+
+            return builder.ToString();
+        }
     }
 }
