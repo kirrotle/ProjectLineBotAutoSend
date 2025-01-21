@@ -59,7 +59,8 @@ namespace Project.Service
             foreach (ArticleModel article in models)
             {
                 List<string> result = ParserRedeemCode(article.Url);
-                if (result.Count == 3)
+                //保底有三個兌換碼
+                if (result.Count >= 3)
                 {
                     _dac.InsertVersion(article);
                     return result;
@@ -112,8 +113,8 @@ namespace Project.Service
         /// <returns></returns>
         private bool IsRedeemCode(string text)
         {
-            //兌換碼為大寫英文及數字組字組合而成,共為12碼
-            Regex regex = new Regex("^[A-Z1-9]{12}$");
+            //兌換碼為大寫英文及數字組字組合而成,共為12~16碼
+            Regex regex = new Regex("^[A-Z0-9]{12,16}$");
 
             return regex.IsMatch(text);
         }
@@ -204,9 +205,9 @@ namespace Project.Service
             (int mainVersion, int subVersion) = GetCurrentVersion();
 
             //下個版本只有兩種可能
-            //一種是((主版本+1).1)
+            //一種是((主版本+1).0)
             //另一種是(主版本.(次版本+1))
-            result.Add($"{mainVersion + 1}.1");
+            result.Add($"{mainVersion + 1}.0");
             result.Add($"{mainVersion}.{subVersion + 1}");
 
             return result;
